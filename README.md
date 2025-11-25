@@ -98,3 +98,148 @@ Presenter - презентер содержит основную логику п
 `emit<T extends object>(event: string, data?: T): void` - инициализация события. При вызове события в метод передается название события и объект с данными, который будет использован как аргумент для вызова обработчика.  
 `trigger<T extends object>(event: string, context?: Partial<T>): (data: T) => void` - возвращает функцию, при вызове которой инициализируется требуемое в параметрах событие с передачей в него данных из второго параметра.
 
+## Данные
+
+### Интерфейсы данных
+
+**Товар (IProduct):**
+```typescript
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+}
+
+описывает структуру товара в каталоге магазина.
+
+Покупатель (IBuyer):
+
+interface IBuyer {
+  payment: 'card' | 'cash' | null;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+описывает данные покупателя, необходимые для оформления заказа.
+
+Заказ (IOrder):
+
+interface IOrder {
+  payment: 'card' | 'cash';
+  email: string;
+  phone: string;
+  address: string;
+  total: number;
+  items: string[];
+}
+
+описывает структуру данных для отправки заказа на сервер.
+
+Результат заказа (OrderResult):
+
+interface OrderResult {
+  id: string;
+  total: number;
+}
+
+описывает ответ сервера после успешного оформления заказа.
+
+Модели данных
+
+Класс ProductList
+отвечает за хранение и управление каталогом товаров.
+
+constructor() Не принимает параметров.
+
+Поля:
+
+items: IProduct[] - массив всех товаров
+
+selectedItem: IProduct | null - выбранный для подробного отображения товар
+
+Методы:
+
+setItems(items: IProduct[]): void - сохраняет массив товаров
+
+getItems(): IProduct[] - возвращает массив всех товаров
+
+getItem(id: string): IProduct | undefined - возвращает товар по его ID
+
+setSelectedItem(item: IProduct): void - сохраняет товар для подробного отображения
+
+getSelectedItem(): IProduct | null - возвращает выбранный товар
+
+
+Класс Basket 
+отвечает за хранение и управление товарами в корзине.
+
+constructor() Не принимает параметров.
+
+Поля:
+
+items: IProduct[] - массив товаров в корзине
+
+Методы:
+
+getItems(): IProduct[] - возвращает массив товаров в корзине
+
+addItem(item: IProduct): void - добавляет товар в корзину
+
+removeItem(id: string): void - удаляет товар из корзины по ID
+
+clear(): void - очищает корзину
+
+getTotal(): number - возвращает общую стоимость товаров в корзине
+
+getCount(): number - возвращает количество товаров в корзине
+
+contains(id: string): boolean - проверяет наличие товара в корзине по ID
+
+
+Класс Buyer 
+отвечает за хранение и валидацию данных покупателя.
+
+constructor()
+Не принимает параметров.
+
+Поля:
+
+payment: 'card' | 'cash' | null - способ оплаты
+
+address: string - адрес доставки
+
+email: string - email покупателя
+
+phone: string - телефон покупателя
+
+Методы:
+
+setData(data: Partial<IBuyer>): void - сохраняет данные покупателя
+
+getData(): IBuyer - возвращает все данные покупателя
+
+clear(): void - очищает данные покупателя
+
+validate(): { [key in keyof IBuyer]?: string } - проверяет валидность данных и возвращает объект с ошибками
+
+Слой коммуникации
+
+Класс WebLarekApi
+отвечает за взаимодействие с API сервера.
+
+constructor(baseApi: IApi)
+Принимает объект, соответствующий интерфейсу IApi.
+
+Поля:
+
+baseApi: IApi - базовый объект API для выполнения запросов
+
+Методы:
+
+getProductList(): Promise<IProduct[]> - выполняет GET запрос на эндпоинт /product/ и возвращает массив товаров
+
+orderProducts(order: IOrder): Promise<OrderResult> - выполняет POST запрос на эндпоинт /order/ и передаёт данные заказа
