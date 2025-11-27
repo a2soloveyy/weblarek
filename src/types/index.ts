@@ -22,7 +22,6 @@ export interface IBuyer {
 }
 
 export interface IOrder extends IBuyer{
-    payment: 'card' | 'cash';
     total: number;
     items: string[];
 }
