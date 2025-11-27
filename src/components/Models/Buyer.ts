@@ -1,4 +1,4 @@
-import { IBuyer } from '../../types';
+import { IBuyer, ValidationErrors } from '../../types';
 
 export class Buyer {
     private payment: 'card' | 'cash' | null = null;
@@ -29,7 +29,7 @@ export class Buyer {
         this.phone = '';
     }
 
-    validate(): { [key in keyof IBuyer]?: string } {
+    validate(): ValidationErrors<IBuyer> {
         const errors: { [key in keyof IBuyer]?: string } = {};
 
         if (!this.payment) {

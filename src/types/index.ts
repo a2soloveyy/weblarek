@@ -21,11 +21,8 @@ export interface IBuyer {
     address: string;
 }
 
-export interface IOrder {
+export interface IOrder extends IBuyer{
     payment: 'card' | 'cash';
-    email: string;
-    phone: string;
-    address: string;
     total: number;
     items: string[];
 }
@@ -34,3 +31,7 @@ export interface OrderResult {
     id: string;
     total: number;
 }
+
+export type ValidationErrors<T> = {
+    [K in keyof T]?: string;
+};

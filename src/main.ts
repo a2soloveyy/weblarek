@@ -5,6 +5,7 @@ import { Basket } from './components/Models/Basket';
 import { Buyer } from './components/Models/Buyer';
 import { WebLarekApi } from './components/Api/WebLarekApi';
 import { API_URL } from './utils/constants';
+import { apiProducts } from './utils/data';
 
 // Инициализация API
 const api = new Api(API_URL);
@@ -20,8 +21,9 @@ console.log('=== Тестирование моделей данных ===');
 
 // Тест ProductList
 console.log('1. Тестирование ProductList:');
-productsModel.setItems([]);
-console.log('Пустой каталог:', productsModel.getItems());
+const testProducts = apiProducts.items || apiProducts;
+productsModel.setItems(testProducts);
+console.log('Каталог товаров:', productsModel.getItems());
 
 // Тест Basket
 console.log('2. Тестирование Basket:');
@@ -34,8 +36,21 @@ console.log('3. Тестирование Buyer:');
 console.log('Данные покупателя:', buyerModel.getData());
 console.log('Валидация пустых данных:', buyerModel.validate());
 
-buyerModel.setData({ email: 'test@test.ru' });
+buyerModel.setData({ 
+    payment: 'card', 
+    email: 'test@test.ru', 
+    phone: '+79999999999', 
+    address: 'Test Address' 
+});
+
 console.log('Данные после установки email:', buyerModel.getData());
+console.log('Валидация заполненных данных:', buyerModel.validate());
+
+buyerModel.setData({ email: 'new@test.ru' });
+console.log('Данные после частичного обновления:', buyerModel.getData());
+
+buyerModel.clear();
+console.log('Данные после очистки:', buyerModel.getData());
 
 // Запрос к серверу за товарами
 console.log('=== Запрос к серверу ===');
@@ -49,41 +64,10 @@ webLarekApi.getProductList()
         
         // Проверяем сохранение
         console.log('Товары в модели:', productsModel.getItems());
-        
-        // Тестируем методы с реальными данными
-        if (products.length > 0) {
-            const firstProduct = products[0];
-            
-            // Тест получения товара по ID
-            console.log('Товар по ID:', productsModel.getItem(firstProduct.id));
-            
-            // Тест работы с корзиной
-            basketModel.addItem(firstProduct);
-            console.log('Товар добавлен в корзину');
-            console.log('Количество товаров в корзине:', basketModel.getCount());
-            console.log('Общая стоимость корзины:', basketModel.getTotal());
-            console.log('Проверка наличия товара в корзине:', basketModel.contains(firstProduct.id));
-            
-            basketModel.removeItem(firstProduct.id);
-            console.log('Товар удален из корзины');
-            console.log('Количество товаров в корзине:', basketModel.getCount());
-        }
     })
+    
     .catch(error => {
         console.error('Ошибка при загрузке товаров:', error);
     });
 
-// Для проверки в браузере - выводим модели в глобальную область видимости
-declare global {
-    interface Window {
-        productsModel: ProductList;
-        basketModel: Basket;
-        buyerModel: Buyer;
-        webLarekApi: WebLarekApi;
-    }
-}
-
-window.productsModel = productsModel;
-window.basketModel = basketModel;
-window.buyerModel = buyerModel;
-window.webLarekApi = webLarekApi;
+    console.log("API_URL:", API_URL);
