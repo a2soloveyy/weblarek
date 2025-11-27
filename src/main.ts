@@ -69,5 +69,3 @@ webLarekApi.getProductList()
     .catch(error => {
         console.error('Ошибка при загрузке товаров:', error);
     });
-
-    console.log("API_URL:", API_URL);
