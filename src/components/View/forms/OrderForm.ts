@@ -1,4 +1,4 @@
-import { Form } from '../Form';
+import { Form } from '../forms/Form';
 import { IBuyer } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 
@@ -16,8 +16,6 @@ export class OrderForm extends Form<IBuyer> {
         // Обработчики для кнопок оплаты
         this._paymentButtons.forEach(button => {
             button.addEventListener('click', () => {
-                this._paymentButtons.forEach(btn => this.setClass(btn, 'button_alt-active', false));
-                this.setClass(button, 'button_alt-active', true);
                 this.events.emit('order:paymentChange', { payment: button.name as 'card' | 'cash' });
             });
         });

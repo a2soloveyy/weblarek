@@ -8,7 +8,6 @@ import { WebLarekApi } from './components/Api/WebLarekApi';
 import { API_URL } from './utils/constants';
 
 // Импорты представлений
-import { CardCatalog } from './components/View/cards/CardCatalog';
 import { CardPreview } from './components/View/cards/CardPreview';
 import { BasketView } from './components/View/other/BasketView';
 import { OrderForm } from './components/View/forms/OrderForm';
@@ -16,6 +15,7 @@ import { ContactsForm } from './components/View/forms/ContactsForm';
 import { SuccessView } from './components/View/other/SuccessView';
 import { Modal } from './components/View/other/Modal';
 import { Header } from './components/View/other/Header';
+import { GalleryView } from './components/View/other/GalleryView';
 import { IOrder } from './types';
 
 // Инициализация EventEmitter и API
@@ -29,7 +29,7 @@ const basketModel = new Basket(events);
 const buyerModel = new Buyer(events);
 
 // Глобальные переменные для представлений
-let gallery: HTMLElement;
+let galleryView: GalleryView;
 let modal: Modal;
 let header: Header;
 let basketView: BasketView;
@@ -37,16 +37,74 @@ let orderForm: OrderForm;
 let contactsForm: ContactsForm;
 let successView: SuccessView;
 
+// Вспомогательные функции валидации
+const validateOrderForm = (): boolean => {
+    const errors = buyerModel.validate();
+    const orderErrors = {
+        payment: errors.payment,
+        address: errors.address
+    };
+    const hasErrors = orderErrors.payment || orderErrors.address;
+    
+    if (orderForm) {
+        orderForm.valid = !hasErrors;
+        orderForm.errors = Object.values(orderErrors).filter(Boolean) as string[];
+    }
+    
+    return !hasErrors;
+};
+
+const validateContactsForm = (): boolean => {
+    const errors = buyerModel.validate();
+    const contactsErrors = {
+        email: errors.email,
+        phone: errors.phone
+    };
+    const hasErrors = contactsErrors.email || contactsErrors.phone;
+    
+    if (contactsForm) {
+        contactsForm.valid = !hasErrors;
+        contactsForm.errors = Object.values(contactsErrors).filter(Boolean) as string[];
+    }
+    
+    return !hasErrors;
+};
+
+// Функция для создания заказа
+const createOrder = (): IOrder => {
+    const buyerData = buyerModel.getData();
+    
+    return {
+        payment: buyerData.payment as 'card' | 'cash',
+        email: buyerData.email,
+        phone: buyerData.phone,
+        address: buyerData.address,
+        total: basketModel.getTotal(),
+        items: basketModel.getItems().map(item => item.id)
+    };
+};
+
+// Функция обработки успешного заказа
+const handleSuccessfulOrder = (result: { total: number }) => {
+    if (successView && modal) {
+        modal.open(successView.render({ total: result.total }));
+    }
+
+    basketModel.clear();
+    buyerModel.clear();
+};
+
 // Инициализация представлений
 const initViews = () => {
     console.log('Инициализация представлений...');
 
     // Галерея
-    gallery = document.querySelector('.gallery') as HTMLElement;
-    if (!gallery) {
+    const galleryContainer = document.querySelector('.gallery') as HTMLElement;
+    if (!galleryContainer) {
         console.error('Не найден элемент .gallery');
         return;
     }
+    galleryView = new GalleryView(galleryContainer, events);
 
     // Header
     const headerContainer = document.querySelector('.header') as HTMLElement;
@@ -137,37 +195,16 @@ events.on('itemsChanged', () => {
     console.log('Обработка itemsChanged...');
     const items = productsModel.getItems();
 
-    if (!gallery) {
+    if (!galleryView) {
         console.error('Галерея не инициализирована');
         return;
     }
 
-    gallery.innerHTML = '';
-
-    items.forEach(item => {
-        const template = document.getElementById('card-catalog') as HTMLTemplateElement;
-        if (!template) {
-            console.error('Шаблон card-catalog не найден');
-            return;
-        }
-
-        const fragment = template.content.cloneNode(true) as DocumentFragment;
-        const cardElement = fragment.firstElementChild as HTMLElement;
-        if (!cardElement) {
-            console.error('Не удалось извлечь элемент из шаблона card-catalog');
-            return;
-        }
-
-        const card = new CardCatalog(cardElement, events);
-        card.render(item);
-        gallery.appendChild(cardElement);
-    });
-
+    galleryView.render({ items });
     console.log('Каталог обновлен:', items.length, 'товаров');
 });
 
-
-// В обработчике basketChanged:
+// При изменении корзины
 events.on('basketChanged', () => {
     const count = basketModel.getCount();
     const items = basketModel.getItems();
@@ -184,7 +221,7 @@ events.on('basketChanged', () => {
     }
 });
 
-// В обработчике card:select:
+// При выборе карточки для просмотра
 events.on('card:select', (data: { product: string }) => {
     const product = productsModel.getItem(data.product);
     if (product && modal) {
@@ -208,7 +245,7 @@ events.on('card:select', (data: { product: string }) => {
     }
 });
 
-// В обработчике card:add:
+// При добавлении товара в корзину
 events.on('card:add', (data: { product: string }) => {
     const product = productsModel.getItem(data.product);
     if (product) {
@@ -217,13 +254,13 @@ events.on('card:add', (data: { product: string }) => {
     }
 });
 
-// В обработчике card:remove:
+// При удалении товара из корзины
 events.on('card:remove', (data: { product: string }) => {
     basketModel.removeItem(data.product);
     if (modal) modal.close();
 });
 
-// В обработчике header:basketOpen:
+// При открытии корзины
 events.on('header:basketOpen', () => {
     if (modal && basketView) {
         modal.open(basketView.render({
@@ -233,48 +270,67 @@ events.on('header:basketOpen', () => {
     }
 });
 
+// При нажатии "Оформить" в корзине
 events.on('basket:order', () => {
     console.log('Открываем форму заказа');
     
     if (modal && orderForm) {
         buyerModel.clear();
-
-        const buyerData = buyerModel.getData();
-        const orderFormElement = orderForm.render(buyerData);
-
-        modal.open(orderFormElement);
-        const errors = buyerModel.validate();
-        const orderErrors = {
-            payment: errors.payment,
-            address: errors.address
-        };
-        const hasErrors = orderErrors.payment || orderErrors.address;
-        orderForm.valid = !hasErrors;
-        orderForm.errors = Object.values(orderErrors).filter(Boolean) as string[];
+        
+        modal.open(orderForm.render(buyerModel.getData()));
+        validateOrderForm();
     }
 });
 
-// В обработчике contacts:submit:
+// При изменении способа оплаты
+events.on('order:paymentChange', (data: { payment: 'card' | 'cash' }) => {
+    buyerModel.setData({ payment: data.payment });
+    validateOrderForm();
+});
+
+// При изменении адреса доставки
+events.on('order:addressChange', (data: { address: string }) => {
+    buyerModel.setData({ address: data.address });
+    validateOrderForm();
+});
+
+// При нажатии "Далее" в форме заказа
+events.on('order:submit', () => {
+    console.log('Переход к форме контактов');
+    
+    if (modal && contactsForm && validateOrderForm()) {
+        modal.open(contactsForm.render(buyerModel.getData()));
+        validateContactsForm();
+    }
+});
+
+// При изменении email
+events.on('contacts:emailChange', (data: { email: string }) => {
+    buyerModel.setData({ email: data.email });
+    validateContactsForm();
+});
+
+// При изменении телефона
+events.on('contacts:phoneChange', (data: { phone: string }) => {
+    buyerModel.setData({ phone: data.phone });
+    validateContactsForm();
+});
+
+// При нажатии "Оплатить" в форме контактов
 events.on('contacts:submit', () => {
-    const buyerData = buyerModel.getData();
-    const order: IOrder = {
-        payment: buyerData.payment as 'card' | 'cash',
-        email: buyerData.email,
-        phone: buyerData.phone,
-        address: buyerData.address,
-        total: basketModel.getTotal(),
-        items: basketModel.getItems().map(item => item.id)
-    };
+
+    if (!validateContactsForm() || !validateOrderForm()) {
+        console.error('Не все данные заполнены или есть ошибки валидации');
+        return;
+    }
+
+    const order = createOrder();
+    console.log('Отправка заказа:', order);
 
     webLarekApi.orderProducts(order)
         .then((result) => {
-            if (successView && modal) {
-                successView.render({ total: result.total });
-                modal.open(successView.render({ total: result.total }));
-            }
-
-            basketModel.clear();
-            buyerModel.clear();
+            console.log('Заказ успешно оформлен:', result);
+            handleSuccessfulOrder(result);
         })
         .catch((error) => {
             console.error('Ошибка оформления заказа:', error);
@@ -286,140 +342,7 @@ events.on('success:close', () => {
     if (modal) modal.close();
 });
 
-// При изменении способа оплаты
-events.on('order:paymentChange', (data: { payment: 'card' | 'cash' }) => {
-    buyerModel.setData({ payment: data.payment });
-    
-    if (orderForm) {
-        const errors = buyerModel.validate();
-        const orderErrors = {
-            payment: errors.payment,
-            address: errors.address
-        };
-        const hasErrors = orderErrors.payment || orderErrors.address;
-        orderForm.valid = !hasErrors;
-        orderForm.errors = Object.values(orderErrors).filter(Boolean) as string[];
-    }
-});
-
-// При изменении адреса
-events.on('order:addressChange', (data: { address: string }) => {
-    buyerModel.setData({ address: data.address });
-    
-    if (orderForm) {
-        const errors = buyerModel.validate();
-        const orderErrors = {
-            payment: errors.payment,
-            address: errors.address
-        };
-        const hasErrors = orderErrors.payment || orderErrors.address;
-        orderForm.valid = !hasErrors;
-        orderForm.errors = Object.values(orderErrors).filter(Boolean) as string[];
-    }
-});
-
-// При отправке формы заказа
-events.on('order:submit', () => {
-    console.log('Переход к форме контактов');
-    
-    if (modal && contactsForm) {
-        const buyerData = buyerModel.getData();
-        const contactsFormElement = contactsForm.render(buyerData);
-        modal.open(contactsFormElement);
-        
-        // Обновляем валидацию для формы контактов
-        const errors = buyerModel.validate();
-        const contactsErrors = {
-            email: errors.email,
-            phone: errors.phone
-        };
-        const hasErrors = contactsErrors.email || contactsErrors.phone;
-        contactsForm.valid = !hasErrors;
-        contactsForm.errors = Object.values(contactsErrors).filter(Boolean) as string[];
-    }
-});
-
-// При изменении email
-events.on('contacts:emailChange', (data: { email: string }) => {
-    buyerModel.setData({ email: data.email });
-
-    // Валидация формы контактов
-    if (contactsForm) {
-        const errors = buyerModel.validate();
-        const contactsErrors = {
-            email: errors.email,
-            phone: errors.phone
-        };
-        const hasErrors = contactsErrors.email || contactsErrors.phone;
-        (contactsForm as any).valid = !hasErrors;
-        (contactsForm as any).errors = Object.values(contactsErrors).filter(Boolean) as string[];
-    }
-});
-
-// При изменении телефона
-events.on('contacts:phoneChange', (data: { phone: string }) => {
-    buyerModel.setData({ phone: data.phone });
-    
-    if (contactsForm) {
-        const errors = buyerModel.validate();
-        const contactsErrors = {
-            email: errors.email,
-            phone: errors.phone
-        };
-        const hasErrors = contactsErrors.email || contactsErrors.phone;
-        contactsForm.valid = !hasErrors;
-        contactsForm.errors = Object.values(contactsErrors).filter(Boolean) as string[];
-    }
-});
-
-events.on('contacts:submit', () => {
-    const buyerData = buyerModel.getData();
-
-    if (!buyerData.payment || !buyerData.address || !buyerData.email || !buyerData.phone) {
-        console.error('Не все данные заполнены');
-        return;
-    }
-
-    const order: IOrder = {
-        payment: buyerData.payment as 'card' | 'cash',
-        email: buyerData.email,
-        phone: buyerData.phone,
-        address: buyerData.address,
-        total: basketModel.getTotal(),
-        items: basketModel.getItems().map(item => item.id)
-    };
-
-    events.on('basket:order', () => {
-    if (modal && orderForm) {
-
-        buyerModel.clear();
-        
-        modal.open(orderForm.render(buyerModel.getData()));
-        
-        const errors = buyerModel.validate();
-        const orderErrors = {
-            payment: errors.payment,
-            address: errors.address
-        };
-        const hasErrors = orderErrors.payment || orderErrors.address;
-        (orderForm as any).valid = !hasErrors;
-        (orderForm as any).errors = Object.values(orderErrors).filter(Boolean) as string[];
-    }
-});
-
-    console.log('Отправка заказа:', order);
-
-    webLarekApi.orderProducts(order)
-        .then((result) => {
-            console.log('Заказ успешно оформлен:', result);
-            if (successView && modal) {
-                modal.open(successView.render({ total: result.total }));
-            }
-
-            basketModel.clear();
-            buyerModel.clear();
-        })
-        .catch((error) => {
-            console.error('Ошибка оформления заказа:', error);
-        });
+// При закрытии модального окна
+events.on('modal:close', () => {
+    if (modal) modal.close();
 });

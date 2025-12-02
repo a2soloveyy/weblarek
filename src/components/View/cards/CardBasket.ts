@@ -1,4 +1,4 @@
-import { Card } from '../Card';
+import { Card } from './Card';
 import { IProduct } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 

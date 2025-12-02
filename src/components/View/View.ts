@@ -34,4 +34,11 @@ export abstract class View<T> extends Component<T> {
             }
         }
     }
+
+    protected setImage(element: HTMLImageElement | null, src: string, alt: string) {
+        if (element) {
+            element.src = src;
+            element.alt = alt;
+        }
+    }
 }

@@ -1,4 +1,4 @@
-import { View } from './View';
+import { View } from '../View';
 
 export abstract class Form<T> extends View<T> {
     protected _submitButton: HTMLButtonElement | null;

@@ -1,4 +1,4 @@
-import { Form } from '../Form';
+import { Form } from '../forms/Form';
 import { IBuyer } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 

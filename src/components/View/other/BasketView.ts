@@ -1,7 +1,6 @@
 import { View } from '../View';
 import { IProduct } from '../../../types';
 import { EventEmitter } from '../../base/Events';
-import { CardBasket, CardBasketData } from '../cards/CardBasket';
 
 interface BasketData {
     items: IProduct[];
@@ -29,43 +28,50 @@ export class BasketView extends View<BasketData> {
     }
 
     set items(value: IProduct[]) {
-        if (this._list) {
-            this._list.innerHTML = '';
+        if (!this._list) return;
 
-            if (value.length === 0) {
+        this._list.innerHTML = '';
 
-                const emptyItem = document.createElement('li');
-                emptyItem.className = 'basket__empty';
-                emptyItem.textContent = 'Корзина пуста';
-                this._list.appendChild(emptyItem);
-            } else {
-               
-                value.forEach((item, index) => {
-                    const template = document.getElementById('card-basket') as HTMLTemplateElement;
-                    if (template) {
-                        const fragment = template.content.cloneNode(true) as DocumentFragment;
-                        const basketItem = fragment.firstElementChild as HTMLElement;
+        if (value.length === 0) {
+            const emptyItem = document.createElement('li');
+            emptyItem.className = 'basket__empty';
+            emptyItem.textContent = 'Корзина пуста';
+            this._list.appendChild(emptyItem);
+        } else {
+            const itemsElements: HTMLElement[] = [];
+            
+            value.forEach((item, index) => {
+                const template = document.getElementById('card-basket') as HTMLTemplateElement;
+                if (!template) return;
 
-                        if (basketItem) {
-                            const cardBasket = new CardBasket(basketItem, this.events);
-                            const cardData: CardBasketData = {
-                                ...item,
-                                index: index + 1
-                            };
-                            cardBasket.render(cardData);
+                const fragment = template.content.cloneNode(true) as DocumentFragment;
+                const basketItem = fragment.firstElementChild as HTMLElement;
 
-                            if (!this._list) return;
-                            this._list.appendChild(basketItem);
-                        }
-                        if (this._button) {
-                            this._button.addEventListener('click', () => {
-                                console.log('Кнопка "Оформить" нажата');
-                                this.events.emit('basket:order');
-                            });
-                        }
+                if (basketItem) {
+                    const indexElement = basketItem.querySelector('.basket__item-index');
+                    const titleElement = basketItem.querySelector('.card__title');
+                    const priceElement = basketItem.querySelector('.card__price');
+                    const deleteButton = basketItem.querySelector('.basket__item-delete');
+
+                    if (indexElement) indexElement.textContent = (index + 1).toString();
+                    if (titleElement) titleElement.textContent = item.title;
+                    if (priceElement) priceElement.textContent = `${item.price} синапсов`;
+
+                    if (deleteButton) {
+                        deleteButton.addEventListener('click', () => {
+                            this.events.emit('card:remove', { product: item.id });
+                        });
                     }
-                });
-            }
+
+                    itemsElements.push(basketItem);
+                }
+            });
+
+            itemsElements.forEach(item => {
+                if (this._list) {
+                    this._list.appendChild(item);
+                }
+            });
         }
     }
 

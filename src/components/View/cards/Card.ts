@@ -1,13 +1,12 @@
-import { View } from './View';
-import { IProduct } from '../../types';
-import { CDN_URL, categoryMap } from '../../utils/constants';
+import { View } from '../View';
+import { IProduct } from '../../../types';
+import { CDN_URL, categoryMap } from '../../../utils/constants';
 
 export abstract class Card extends View<IProduct> {
     protected _category: HTMLElement | null;
     protected _title: HTMLElement | null;
     protected _image: HTMLImageElement | null;
     protected _price: HTMLElement | null;
-    protected _id: string = '';
 
     constructor(container: HTMLElement) {
         super(container);
@@ -21,7 +20,8 @@ export abstract class Card extends View<IProduct> {
         this.setText(this._category, value);
         if (this._category) {
 
-            Object.values(categoryMap).forEach(className => {
+            const classNames = Object.values(categoryMap) as string[];
+            classNames.forEach(className => {
                 this._category!.classList.remove(className);
             });
 
@@ -38,7 +38,6 @@ export abstract class Card extends View<IProduct> {
 
     set image(value: string) {
         if (this._image && value) {
-
             const cleanValue = value.startsWith('/') ? value : `/${value}`;
             this.setImage(this._image, `${CDN_URL}${cleanValue}`, this._title?.textContent || '');
         }
@@ -52,13 +51,7 @@ export abstract class Card extends View<IProduct> {
         }
     }
 
-    set id(value: string) {
-        this._id = value;
-        this.container.dataset.id = value;
-    }
-
     render(data: Partial<IProduct>): HTMLElement {
-        if (data.id) this.id = data.id;
         if (data.category) this.category = data.category;
         if (data.title) this.title = data.title;
         if (data.image) this.image = data.image;
