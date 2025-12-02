@@ -1,22 +1,33 @@
 import { IProduct } from '../../types';
+import { EventEmitter } from '../base/Events';
 
 export class Basket {
     private items: IProduct[] = [];
+    private events: EventEmitter;
+
+    constructor(events: EventEmitter) {
+        this.events = events;
+    }
 
     getItems(): IProduct[] {
         return this.items;
     }
 
     addItem(item: IProduct): void {
-        this.items.push(item);
+        if (!this.items.some(i => i.id === item.id)) {
+            this.items.push(item);
+            this.events.emit('basketChanged', { items: this.items });
+        }
     }
 
     removeItem(id: string): void {
         this.items = this.items.filter(item => item.id !== id);
+        this.events.emit('basketChanged', { items: this.items });
     }
 
     clear(): void {
         this.items = [];
+        this.events.emit('basketChanged', { items: this.items });
     }
 
     getTotal(): number {

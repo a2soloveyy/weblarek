@@ -34,3 +34,49 @@ export interface OrderResult {
 export type ValidationErrors<T> = {
     [K in keyof T]?: string;
 };
+
+export interface ItemsChangedEvent {
+    items: IProduct[];
+}
+
+export interface SelectedItemChangedEvent {
+    item: IProduct | null;
+}
+
+export interface BasketChangedEvent {
+    items: IProduct[];
+}
+
+export interface BuyerChangedEvent {
+    buyer: IBuyer;
+}
+
+export interface CardSelectEvent {
+    product: string;
+}
+
+export interface CardActionEvent {
+    product: string;
+}
+
+export interface PaymentChangeEvent {
+    payment: 'card' | 'cash';
+}
+
+export interface AddressChangeEvent {
+    address: string;
+}
+
+export interface EmailChangeEvent {
+    email: string;
+}
+
+export interface PhoneChangeEvent {
+    phone: string;
+}
+export interface IValidationErrors {
+    payment?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+}

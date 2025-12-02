@@ -9,6 +9,6 @@ export class WebLarekApi {
     }
 
     async orderProducts(order: IOrder): Promise<OrderResult> {
-        return await this.baseApi.post<OrderResult>('/orders', order);
+        return await this.baseApi.post<OrderResult>('/order', order);
     }
 }
