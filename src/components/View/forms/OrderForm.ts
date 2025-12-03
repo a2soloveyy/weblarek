@@ -13,7 +13,7 @@ export class OrderForm extends Form<IBuyer> {
         this._paymentButtons = this.findAllElements<HTMLButtonElement>('.button_alt');
         this._addressInput = this.findElement<HTMLInputElement>('input[name="address"]');
 
-        // Обработчики для кнопок оплаты
+        // Обработчик для кнопок оплаты
         this._paymentButtons.forEach(button => {
             button.addEventListener('click', () => {
                 this.events.emit('order:paymentChange', { payment: button.name as 'card' | 'cash' });

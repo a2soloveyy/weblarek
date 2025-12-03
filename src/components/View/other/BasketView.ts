@@ -1,9 +1,8 @@
 import { View } from '../View';
-import { IProduct } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 
 interface BasketData {
-    items: IProduct[];
+    items: HTMLElement[];
     total: number;
 }
 
@@ -27,7 +26,7 @@ export class BasketView extends View<BasketData> {
         }
     }
 
-    set items(value: IProduct[]) {
+    set items(value: HTMLElement[]) {
         if (!this._list) return;
 
         this._list.innerHTML = '';
@@ -38,36 +37,7 @@ export class BasketView extends View<BasketData> {
             emptyItem.textContent = 'Корзина пуста';
             this._list.appendChild(emptyItem);
         } else {
-            const itemsElements: HTMLElement[] = [];
-            
-            value.forEach((item, index) => {
-                const template = document.getElementById('card-basket') as HTMLTemplateElement;
-                if (!template) return;
-
-                const fragment = template.content.cloneNode(true) as DocumentFragment;
-                const basketItem = fragment.firstElementChild as HTMLElement;
-
-                if (basketItem) {
-                    const indexElement = basketItem.querySelector('.basket__item-index');
-                    const titleElement = basketItem.querySelector('.card__title');
-                    const priceElement = basketItem.querySelector('.card__price');
-                    const deleteButton = basketItem.querySelector('.basket__item-delete');
-
-                    if (indexElement) indexElement.textContent = (index + 1).toString();
-                    if (titleElement) titleElement.textContent = item.title;
-                    if (priceElement) priceElement.textContent = `${item.price} синапсов`;
-
-                    if (deleteButton) {
-                        deleteButton.addEventListener('click', () => {
-                            this.events.emit('card:remove', { product: item.id });
-                        });
-                    }
-
-                    itemsElements.push(basketItem);
-                }
-            });
-
-            itemsElements.forEach(item => {
+            value.forEach(item => {
                 if (this._list) {
                     this._list.appendChild(item);
                 }

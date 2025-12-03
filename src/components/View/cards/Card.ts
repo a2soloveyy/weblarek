@@ -7,6 +7,7 @@ export abstract class Card extends View<IProduct> {
     protected _title: HTMLElement | null;
     protected _image: HTMLImageElement | null;
     protected _price: HTMLElement | null;
+    protected _id: string = '';
 
     constructor(container: HTMLElement) {
         super(container);
@@ -16,10 +17,17 @@ export abstract class Card extends View<IProduct> {
         this._price = this.findElement('.card__price');
     }
 
+    set id(value: string) {
+        this._id = value;
+    }
+
+    get id(): string {
+        return this._id;
+    }
+
     set category(value: string) {
         this.setText(this._category, value);
         if (this._category) {
-
             const classNames = Object.values(categoryMap) as string[];
             classNames.forEach(className => {
                 this._category!.classList.remove(className);
@@ -52,6 +60,7 @@ export abstract class Card extends View<IProduct> {
     }
 
     render(data: Partial<IProduct>): HTMLElement {
+        if (data.id) this.id = data.id;
         if (data.category) this.category = data.category;
         if (data.title) this.title = data.title;
         if (data.image) this.image = data.image;

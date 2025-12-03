@@ -1,4 +1,4 @@
-import { Card } from './Card';
+import { Card } from '../cards/Card';
 import { IProduct } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 
@@ -20,7 +20,7 @@ export class CardPreview extends Card {
         if (this._button) {
             this._button.addEventListener('click', () => {
                 const event = this.container.dataset.inBasket === 'true' ? 'card:remove' : 'card:add';
-                this.events.emit(event, { product: this.container.dataset.id });
+                this.events.emit(event, { product: this.id });
             });
         }
     }
@@ -31,7 +31,8 @@ export class CardPreview extends Card {
 
     set inBasket(value: boolean) {
         if (this._button) {
-            this._button.textContent = value ? 'Удалить из корзины' : 'Купить';
+            
+            this._button.textContent = value ? 'Убрать из корзины' : 'Купить';
             this.container.dataset.inBasket = value.toString();
         }
     }
@@ -50,7 +51,6 @@ export class CardPreview extends Card {
         super.render(data);
         if (data.description) this.description = data.description;
         if (data.inBasket !== undefined) this.inBasket = data.inBasket;
-        this.container.dataset.id = data.id;
         return this.container;
     }
 }

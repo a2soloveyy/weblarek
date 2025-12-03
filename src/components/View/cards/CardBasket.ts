@@ -1,4 +1,4 @@
-import { Card } from './Card';
+import { Card } from '../cards/Card';
 import { IProduct } from '../../../types';
 import { EventEmitter } from '../../base/Events';
 
@@ -18,11 +18,8 @@ export class CardBasket extends Card {
         this._deleteButton = this.findElement<HTMLButtonElement>('.basket__item-delete');
 
         if (this._deleteButton) {
-            this._deleteButton.addEventListener('click', (event) => {
-                event.stopPropagation();
-                if (this.container.dataset.id) {
-                    this.events.emit('card:remove', { product: this.container.dataset.id });
-                }
+            this._deleteButton.addEventListener('click', () => {
+                this.events.emit('card:remove', { product: this.id });
             });
         }
     }
@@ -34,7 +31,7 @@ export class CardBasket extends Card {
     render(data: CardBasketData): HTMLElement {
         super.render(data);
         if (data.index) this.index = data.index;
-        this.container.dataset.id = data.id;
+    
         return this.container;
     }
 }

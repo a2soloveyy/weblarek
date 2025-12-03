@@ -8,7 +8,9 @@ import { WebLarekApi } from './components/Api/WebLarekApi';
 import { API_URL } from './utils/constants';
 
 // Импорты представлений
+import { CardCatalog } from './components/View/cards/CardCatalog';
 import { CardPreview } from './components/View/cards/CardPreview';
+import { CardBasket } from './components/View/cards/CardBasket';
 import { BasketView } from './components/View/other/BasketView';
 import { OrderForm } from './components/View/forms/OrderForm';
 import { ContactsForm } from './components/View/forms/ContactsForm';
@@ -16,7 +18,7 @@ import { SuccessView } from './components/View/other/SuccessView';
 import { Modal } from './components/View/other/Modal';
 import { Header } from './components/View/other/Header';
 import { GalleryView } from './components/View/other/GalleryView';
-import { IOrder } from './types';
+import { IOrder, IProduct } from './types';
 
 // Инициализация EventEmitter и API
 const events = new EventEmitter();
@@ -94,6 +96,50 @@ const handleSuccessfulOrder = (result: { total: number }) => {
     buyerModel.clear();
 };
 
+// Функция для создания карточек каталога
+const createCatalogCards = (items: IProduct[]): HTMLElement[] => {
+    return items.map(item => {
+        const template = document.getElementById('card-catalog') as HTMLTemplateElement;
+        if (!template) {
+            console.error('Шаблон card-catalog не найден');
+            return document.createElement('div');
+        }
+
+        const fragment = template.content.cloneNode(true) as DocumentFragment;
+        const cardElement = fragment.firstElementChild as HTMLElement;
+        if (!cardElement) {
+            console.error('Не удалось извлечь элемент из шаблона card-catalog');
+            return document.createElement('div');
+        }
+
+        const card = new CardCatalog(cardElement, events);
+        card.render(item);
+        return cardElement;
+    });
+};
+
+// Функция для создания карточек корзины
+const createBasketCards = (items: IProduct[]): HTMLElement[] => {
+    return items.map((item, index) => {
+        const template = document.getElementById('card-basket') as HTMLTemplateElement;
+        if (!template) {
+            console.error('Шаблон card-basket не найден');
+            return document.createElement('div');
+        }
+
+        const fragment = template.content.cloneNode(true) as DocumentFragment;
+        const basketItem = fragment.firstElementChild as HTMLElement;
+        if (!basketItem) {
+            console.error('Не удалось извлечь элемент из шаблона card-basket');
+            return document.createElement('div');
+        }
+
+        const cardBasket = new CardBasket(basketItem, events);
+        cardBasket.render({ ...item, index: index + 1 });
+        return basketItem;
+    });
+};
+
 // Инициализация представлений
 const initViews = () => {
     console.log('Инициализация представлений...');
@@ -104,7 +150,7 @@ const initViews = () => {
         console.error('Не найден элемент .gallery');
         return;
     }
-    galleryView = new GalleryView(galleryContainer, events);
+    galleryView = new GalleryView(galleryContainer);
 
     // Header
     const headerContainer = document.querySelector('.header') as HTMLElement;
@@ -199,8 +245,9 @@ events.on('itemsChanged', () => {
         console.error('Галерея не инициализирована');
         return;
     }
-
-    galleryView.render({ items });
+    
+    const cards = createCatalogCards(items);
+    galleryView.render({ items: cards });
     console.log('Каталог обновлен:', items.length, 'товаров');
 });
 
@@ -215,9 +262,10 @@ events.on('basketChanged', () => {
         header.render({ counter: count });
     }
 
-    // Обновляем представление корзины
+    // Создаем карточки корзины и передаем их в представление корзины
     if (basketView) {
-        basketView.render({ items, total });
+        const cards = createBasketCards(items);
+        basketView.render({ items: cards, total });
     }
 });
 
@@ -263,8 +311,10 @@ events.on('card:remove', (data: { product: string }) => {
 // При открытии корзины
 events.on('header:basketOpen', () => {
     if (modal && basketView) {
+        const items = basketModel.getItems();
+        const cards = createBasketCards(items);
         modal.open(basketView.render({
-            items: basketModel.getItems(),
+            items: cards,
             total: basketModel.getTotal()
         }));
     }
@@ -318,7 +368,7 @@ events.on('contacts:phoneChange', (data: { phone: string }) => {
 
 // При нажатии "Оплатить" в форме контактов
 events.on('contacts:submit', () => {
-
+    // Проверяем валидацию обеих форм
     if (!validateContactsForm() || !validateOrderForm()) {
         console.error('Не все данные заполнены или есть ошибки валидации');
         return;
@@ -339,10 +389,5 @@ events.on('contacts:submit', () => {
 
 // При закрытии успешного заказа
 events.on('success:close', () => {
-    if (modal) modal.close();
-});
-
-// При закрытии модального окна
-events.on('modal:close', () => {
     if (modal) modal.close();
 });

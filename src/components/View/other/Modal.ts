@@ -12,20 +12,17 @@ export class Modal extends View<{}> {
         this._closeButton = this.findElement<HTMLButtonElement>('.modal__close');
         this._content = this.findElement('.modal__content');
 
-
         if (this._closeButton) {
             this._closeButton.addEventListener('click', () => {
                 this.close();
             });
         }
 
-
         this.container.addEventListener('click', (event) => {
             if (event.target === this.container) {
                 this.close();
             }
         });
-
 
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && this.container.classList.contains('modal_active')) {
